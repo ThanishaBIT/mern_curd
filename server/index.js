@@ -2,6 +2,7 @@
 
 const express = require("express");
 const mongoose=require("mongoose");
+require("dotenv").config();
 const cors=require("cors");
 
 //Create Express Server
@@ -14,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect("mongodb+srv://thanishact23_db_user:qZxQTjkhTSs265CT@cluster0.1xliwcl.mongodb.net/?appName=Cluster0")
+mongoose.connect("process.env.MONGO_URL")
 .then(()=>console.log("MongoDB Connected"))
 .catch(err=>console.log(err));
 
@@ -44,8 +45,8 @@ app.delete("/:id",async(req,res)=>
     await Person.findByIdAndDelete(req.params.id);
     res.json({message:"person Deleted"});
 })
-
+const PORT=process.env.PORT ||4000;
 //Connection
-app.listen(5000,()=>{
+app.listen(PORT,()=>{
     console.log("Server is running on http://localhost:5000")
 })
