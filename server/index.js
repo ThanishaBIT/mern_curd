@@ -48,5 +48,5 @@ app.delete("/:id",async(req,res)=>
 const PORT=process.env.PORT ||4000;
 //Connection
 app.listen(PORT,()=>{
-    console.log("Server is running on http://localhost:5000")
+    console.log("Server is running on http://localhost:4000")
 })
