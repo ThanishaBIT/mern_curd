@@ -1,52 +1,122 @@
-// Import the libraries - express - mongoose - cors
+import './App.css';
+import axios from "axios";
+import { useEffect, useState } from 'react';
 
-const express = require("express");
-const mongoose=require("mongoose");
-require("dotenv").config();
-const cors=require("cors");
+// ✅ USE ENV VARIABLE (NO localhost)
+const API = process.env.REACT_APP_API_URL;
 
-//Create Express Server
+function App() {
 
-const app=express();
-app.use(cors());
+  const [people, setPeople] = useState([]);
+  const [form, setForm] = useState({ name: "", age: "" });
+  const [editId, setEditId] = useState(null);
 
+  useEffect(() => {
+    loadPeople();
+  }, []);
 
+  const loadPeople = async () => {
+    try {
+      const res = await axios.get(API);
+      setPeople(res.data);
+    } catch (err) {
+      console.error("Fetch error", err);
+    }
+  };
 
-app.use(express.json());
+  // ADD
+  const addPerson = async () => {
+    if (!form.name || !form.age) {
+      alert("Enter name and age!");
+      return;
+    }
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-.then(()=>console.log("MongoDB Connected"))
-.catch(err=>console.log(err));
+    try {
+      const res = await axios.post(API, {
+        name: form.name,
+        age: Number(form.age),
+      });
 
-// Create a Model
+      setPeople([...people, res.data]);
+      setForm({ name: "", age: "" });
+    } catch (err) {
+      console.error("Add error", err);
+    }
+  };
 
-const Person = mongoose.model("Person",{name:String,age:Number},"person");
+  // START EDIT
+  const startEdit = (p) => {
+    setEditId(p._id);
+    setForm({ name: p.name, age: p.age });
+  };
 
-// Read all the peoples
-app.get("/",async(req,res)=>{
-    const people=await Person.find();
-    res.json(people);
-})
-//Add new peoples
-app.post("/",async(req,res)=>{
+  // UPDATE
+  const updatePerson = async () => {
+    try {
+      const res = await axios.put(`${API}/${editId}`, {
+        name: form.name,
+        age: Number(form.age),
+      });
 
-    const newPerson = await Person.create(req.body);
-    res.json(newPerson);
-})
-//update people
-app.put("/:id",async(req,res)=>{
-    const updates =await Person.findByIdAndUpdate(req.params.id,req.body,  {new:true});
-   res.json(updates);
-})
-//delete the people
-app.delete("/:id",async(req,res)=>
-{
-    await Person.findByIdAndDelete(req.params.id);
-    res.json({message:"person Deleted"});
-})
-const PORT=process.env.PORT ||4000;
-//Connection
-app.listen(PORT,()=>{
-    console.log("Server is running on http://localhost:4000")
-})
+      setPeople(
+        people.map((p) => (p._id === editId ? res.data : p))
+      );
+      setEditId(null);
+      setForm({ name: "", age: "" });
+    } catch (err) {
+      console.error("Update error", err);
+    }
+  };
+
+  // DELETE
+  const deletePerson = async (id) => {
+    try {
+      await axios.delete(`${API}/${id}`);
+      setPeople(people.filter((p) => p._id !== id));
+    } catch (err) {
+      console.error("Delete error", err);
+    }
+  };
+
+  return (
+    <>
+      <h3>MERN STACK CRUD APPLICATION</h3>
+
+      <input
+        type="text"
+        placeholder="Enter Name"
+        value={form.name}
+        onChange={(e) =>
+          setForm({ ...form, name: e.target.value })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Enter Age"
+        value={form.age}
+        onChange={(e) =>
+          setForm({ ...form, age: e.target.value })
+        }
+      />
+
+      {editId ? (
+        <button onClick={updatePerson}>Update</button>
+      ) : (
+        <button onClick={addPerson}>Add</button>
+      )}
+
+      <hr />
+
+      {people.map((p) => (
+        <div key={p._id}>
+          <b>{p.name}</b> - {p.age}
+          <button onClick={() => startEdit(p)}>Edit</button>
+          <button onClick={() => deletePerson(p._id)}>Delete</button>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export default App;
