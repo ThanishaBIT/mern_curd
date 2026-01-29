@@ -1,103 +1,52 @@
-import { useEffect, useState } from "react";
+// Import the libraries - express - mongoose - cors
 
-function App() {
-  const API = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const express = require("express");
+const mongoose=require("mongoose");
+require("dotenv").config();
+const cors=require("cors");
 
-  const [people, setPeople] = useState([]);
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [editId, setEditId] = useState(null);
+//Create Express Server
 
-  // Load data
-  useEffect(() => {
-    fetchPeople();
-  }, []);
+const app=express();
+app.use(cors());
 
-  const fetchPeople = async () => {
-    const res = await fetch(API);
-    const data = await res.json();
-    setPeople(data);
-  };
 
-  // Add or update
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    const payload = { name, age };
+app.use(express.json());
 
-    if (editId) {
-      await fetch(`${API}/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      setEditId(null);
-    } else {
-      await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    }
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI)
+.then(()=>console.log("MongoDB Connected"))
+.catch(err=>console.log(err));
 
-    setName("");
-    setAge("");
-    fetchPeople();
-  };
+// Create a Model
 
-  // Delete
-  const deletePerson = async (id) => {
-    await fetch(`${API}/${id}`, { method: "DELETE" });
-    fetchPeople();
-  };
+const Person = mongoose.model("Person",{name:String,age:Number},"person");
 
-  // Edit
-  const editPerson = (person) => {
-    setName(person.name);
-    setAge(person.age);
-    setEditId(person._id);
-  };
+// Read all the peoples
+app.get("/",async(req,res)=>{
+    const people=await Person.find();
+    res.json(people);
+})
+//Add new peoples
+app.post("/",async(req,res)=>{
 
-  return (
-    <div style={{ maxWidth: "400px", margin: "40px auto" }}>
-      <h2>Name & Age CRUD</h2>
-
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <br /><br />
-
-        <input
-          type="number"
-          placeholder="Age"
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-          required
-        />
-        <br /><br />
-
-        <button type="submit">
-          {editId ? "Update" : "Add"}
-        </button>
-      </form>
-
-      <hr />
-
-      {people.map((p) => (
-        <div key={p._id}>
-          <strong>{p.name}</strong> — {p.age}
-          <br />
-          <button onClick={() => editPerson(p)}>Edit</button>
-          <button onClick={() => deletePerson(p._id)}>Delete</button>
-          <hr />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default App;
+    const newPerson = await Person.create(req.body);
+    res.json(newPerson);
+})
+//update people
+app.put("/:id",async(req,res)=>{
+    const updates =await Person.findByIdAndUpdate(req.params.id,req.body,  {new:true});
+   res.json(updates);
+})
+//delete the people
+app.delete("/:id",async(req,res)=>
+{
+    await Person.findByIdAndDelete(req.params.id);
+    res.json({message:"person Deleted"});
+})
+const PORT=process.env.PORT ||4000;
+//Connection
+app.listen(PORT,()=>{
+    console.log("Server is running on http://localhost:4000")
+})
