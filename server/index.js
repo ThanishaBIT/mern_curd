@@ -8,7 +8,7 @@ const cors=require("cors");
 //Create Express Server
 
 const app=express();
-const cors = require("cors");
+
 
 app.use(
   cors({
