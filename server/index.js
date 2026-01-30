@@ -8,7 +8,19 @@ const cors=require("cors");
 //Create Express Server
 
 const app=express();
-app.use(cors());
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://mern-curd-1-lhhz.onrender.com"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  })
+);
+
 
 
 
